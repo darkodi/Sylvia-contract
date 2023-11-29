@@ -1,5 +1,7 @@
 pub mod contract;
 pub mod responses;
+#[cfg(test)]
+pub mod multitest;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
