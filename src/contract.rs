@@ -1,8 +1,12 @@
 use cosmwasm_std::{Response, StdResult};
+use cw_storage_plus::Item;
 use sylvia::{contract, entry_points};
 use sylvia::types::InstantiateCtx; //  context type
 
-pub struct CounterContract;
+pub struct CounterContract {
+    // Item<_> - this is just an accessor that allows to read a state stored on the blockchain via the key "count" in our case
+    pub(crate) count: Item<'static, u32>,
+}
 
 // macro which dispatch received messages to the handler
 /*The #[entry_point] macro in Sylvia is like a translator, 
@@ -15,11 +19,15 @@ and utilities like multitest helpers for them. */
 #[contract]
 impl CounterContract {
     pub const fn new() -> Self {
-        Self
+        Self {
+            count: Item::new("count"),
+        }
     }
 
     #[msg(instantiate)]
-    pub fn instantiate(&self, _ctx: InstantiateCtx) -> StdResult<Response> {
+    pub fn instantiate(&self, _ctx: InstantiateCtx, count: u32) -> StdResult<Response> {
+        // _ctx.deps.storage - actual blockchain storage
+        self.count.save(_ctx.deps.storage, &count)?; // initial value
         Ok(Response::default())
     }
 }
