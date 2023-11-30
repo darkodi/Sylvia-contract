@@ -1,7 +1,7 @@
 use cosmwasm_std::{Response, StdResult};
 use cw_storage_plus::Item;
 use sylvia::{contract, entry_points};
-use sylvia::types::{InstantiateCtx, QueryCtx};
+use sylvia::types::{InstantiateCtx, QueryCtx, ExecCtx};
 
 use crate::responses::CountResponse; //  context types
 
@@ -37,5 +37,14 @@ impl CounterContract {
     pub fn count(&self, ctx: QueryCtx) -> StdResult<CountResponse> {
         let count = self.count.load(ctx.deps.storage)?;
         Ok(CountResponse { count })
+    }
+
+    #[msg(exec)]
+    pub fn increment_count(&self, ctx: ExecCtx, ) -> StdResult<Response> {
+        self.count
+            .update(ctx.deps.storage, |count| -> StdResult<u32> {
+                Ok(count + 1)
+            })?;
+        Ok(Response::default())
     }
 }

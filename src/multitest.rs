@@ -13,4 +13,9 @@ fn instantiate() {
 
     let count = contract.count().unwrap().count;
     assert_eq!(count, 42);
+
+    contract.increment_count().call(owner).unwrap();
+
+    let count = contract.count().unwrap().count;
+    assert_eq!(count, 43);
 }
