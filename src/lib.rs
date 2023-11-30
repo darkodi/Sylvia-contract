@@ -1,9 +1,10 @@
 pub mod contract;
 pub mod error;
 pub mod responses;
+pub mod whitelist;
+pub mod whitelist_impl;
 #[cfg(test)]
 pub mod multitest;
-pub mod whitelist;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right

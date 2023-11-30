@@ -1,6 +1,9 @@
-use sylvia::multitest::App; // to simulate blockchain
+#![allow(deprecated)]
 
-use crate::{contract::multitest_utils::CodeId, error::ContractError};
+use cosmwasm_std::Addr;
+use sylvia::multitest::App;
+
+use crate::{contract::sv::multitest_utils::CodeId, error::ContractError, whitelist_impl::sv::test_utils::Whitelist};
 
 #[test]
 fn instantiate() {
@@ -39,3 +42,47 @@ fn decrement_below_zero() {
     let err = contract.decrement_count().call(owner).unwrap_err();
     assert_eq!(err, ContractError::CannotDecrementCount);
 }
+#[test]
+fn manage_admins() {
+    let app = App::default();
+    let code_id = CodeId::store_code(&app);
+
+    let owner = "owner";
+    let admin = "admin";
+    let random_user = "random";
+
+    let contract = code_id.instantiate(1).call(owner).unwrap();
+
+    // Admins list is empty
+    let admins = contract.whitelist_proxy().admins().unwrap().admins;
+    assert!(admins.is_empty());
+
+    // Admin can be added
+    contract
+        .whitelist_proxy()
+        .add_admin(admin.to_owned())
+        .call(owner)
+        .unwrap();
+
+    let admins = contract.whitelist_proxy().admins().unwrap().admins;
+    assert_eq!(admins, &[Addr::unchecked(admin)]);
+
+    // Admin can NOT be removed nor added by a random Joe
+    let err = contract
+        .whitelist_proxy()
+        .remove_admin(admin.to_owned())
+        .call(random_user)
+        .unwrap_err();
+    assert_eq!(err, ContractError::NotTheOwner(Addr::unchecked(random_user)));
+
+    // Admin can be removed
+    contract
+        .whitelist_proxy()
+        .remove_admin(admin.to_owned())
+        .call(owner)
+        .unwrap();
+
+    let admins = contract.whitelist_proxy().admins().unwrap().admins;
+    assert!(admins.is_empty());
+}
+
