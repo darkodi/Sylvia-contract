@@ -3,6 +3,7 @@ use cw_storage_plus::Item;
 use sylvia::{contract, entry_points};
 use sylvia::types::{InstantiateCtx, QueryCtx, ExecCtx};
 
+use crate::error::ContractError;
 use crate::responses::CountResponse; //  context types
 
 pub struct CounterContract {
@@ -19,6 +20,7 @@ enabling the complex Rust types used in smart contract functions to be understoo
 It will parse every method inside the impl block marked with the [msg(...)] attribute and create proper messages 
 and utilities like multitest helpers for them. */
 #[contract]
+#[error(ContractError)] // To inform sylvia that it should be using a new type we add #[error(ContractError)] attribute to the contract macro call.
 impl CounterContract {
     pub const fn new() -> Self {
         Self {
@@ -45,6 +47,15 @@ impl CounterContract {
             .update(ctx.deps.storage, |count| -> StdResult<u32> {
                 Ok(count + 1)
             })?;
+        Ok(Response::default())
+    }
+    #[msg(exec)]
+    pub fn decrement_count(&self, ctx: ExecCtx) -> Result<Response, ContractError> {
+        let count = self.count.load(ctx.deps.storage)?;
+        if count == 0 {
+            return Err(ContractError::CannotDecrementCount);
+        }
+        self.count.save(ctx.deps.storage, &(count - 1))?;
         Ok(Response::default())
     }
 }
