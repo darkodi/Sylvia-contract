@@ -3,6 +3,7 @@ pub mod error;
 pub mod responses;
 #[cfg(test)]
 pub mod multitest;
+pub mod whitelist;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
