@@ -1,6 +1,8 @@
 use cosmwasm_std::{Response, StdResult, Storage, Addr};
 use cw_storage_plus::Item;
-use sylvia::{contract, entry_points};
+use sylvia::contract;
+#[cfg(not(feature = "library"))]
+use sylvia::entry_points;
 use sylvia::types::{InstantiateCtx, QueryCtx, ExecCtx};
 
 use crate::error::ContractError;
@@ -17,7 +19,7 @@ pub struct CounterContract<'a> {
 /*The #[entry_point] macro in Sylvia is like a translator, 
 enabling the complex Rust types used in smart contract functions to be understood and handled by the simpler Wasm runtime.  */
 // it goes before #[contract]!
-#[entry_points] 
+#[cfg_attr(not(feature = "library"), entry_points)]
 /*We mark the impl block with contract attribute macro. 
 It will parse every method inside the impl block marked with the [msg(...)] attribute and create proper messages 
 and utilities like multitest helpers for them. */
@@ -34,9 +36,11 @@ impl CounterContract<'_> {
     }
 
     #[msg(instantiate)]
-    pub fn instantiate(&self, _ctx: InstantiateCtx, count: u32) -> StdResult<Response> {
+    pub fn instantiate(&self, ctx: InstantiateCtx, count: u32, admins: Vec<Addr>) -> StdResult<Response> {
         // _ctx.deps.storage - actual blockchain storage
-        self.count.save(_ctx.deps.storage, &count)?; // initial value
+        self.count.save(ctx.deps.storage, &count)?; // initial value
+        self.owner.save(ctx.deps.storage, &ctx.info.sender)?;
+        self.admins.save(ctx.deps.storage, &admins)?;
         Ok(Response::default())
     }
 
@@ -64,9 +68,9 @@ impl CounterContract<'_> {
         Ok(Response::default())
     }
 
-    pub(crate) fn is_admin_or_owner(&self, storage: &mut dyn Storage, address: &Addr) -> bool {
-        return self.is_owner(storage, address) || self.is_admin(storage, address);
-    }
+    // pub(crate) fn is_admin_or_owner(&self, storage: &mut dyn Storage, address: &Addr) -> bool {
+    //     return self.is_owner(storage, address) || self.is_admin(storage, address);
+    // }
 
     pub(crate) fn is_owner(&self, storage: &mut dyn Storage, address: &Addr) -> bool {
         // basically fail if unable to load state... be on the safe side
@@ -74,12 +78,12 @@ impl CounterContract<'_> {
         owner == address
     }
 
-    pub(crate) fn is_admin(&self, storage: &mut dyn Storage, address: &Addr) -> bool {
-        // basically fail if unable to load state... be on the safe side
-        let admins: Vec<Addr> = self.admins.load(storage).unwrap_or(vec![]);
-        match admins.binary_search(address) {
-            Ok(_) => true,
-            _ => false,
-        }
-    }
+    // pub(crate) fn is_admin(&self, storage: &mut dyn Storage, address: &Addr) -> bool {
+    //     // basically fail if unable to load state... be on the safe side
+    //     let admins: Vec<Addr> = self.admins.load(storage).unwrap_or(vec![]);
+    //     match admins.binary_search(address) {
+    //         Ok(_) => true,
+    //         _ => false,
+    //     }
+    // }
 }

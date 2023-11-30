@@ -12,7 +12,7 @@ fn instantiate() {
 
     let owner = "owner";
 
-    let contract = code_id.instantiate(42).call(owner).unwrap();
+    let contract = code_id.instantiate(42, vec![]).call(owner).unwrap();
 
     let count = contract.count().unwrap().count;
     assert_eq!(count, 42);
@@ -29,7 +29,7 @@ fn decrement_below_zero() {
 
     let owner = "owner";
 
-    let contract = code_id.instantiate(1).call(owner).unwrap();
+    let contract = code_id.instantiate(1, vec![]).call(owner).unwrap();
 
     let count = contract.count().unwrap().count;
     assert_eq!(count, 1);
@@ -43,7 +43,7 @@ fn decrement_below_zero() {
     assert_eq!(err, ContractError::CannotDecrementCount);
 }
 #[test]
-fn manage_admins() {
+fn manage_admins1() {
     let app = App::default();
     let code_id = CodeId::store_code(&app);
 
@@ -51,7 +51,7 @@ fn manage_admins() {
     let admin = "admin";
     let random_user = "random";
 
-    let contract = code_id.instantiate(1).call(owner).unwrap();
+    let contract = code_id.instantiate(1, vec![]).call(owner).unwrap();
 
     // Admins list is empty
     let admins = contract.whitelist_proxy().admins().unwrap().admins;
@@ -74,6 +74,41 @@ fn manage_admins() {
         .call(random_user)
         .unwrap_err();
     assert_eq!(err, ContractError::NotTheOwner(Addr::unchecked(random_user)));
+
+    // Admin can be removed
+    contract
+        .whitelist_proxy()
+        .remove_admin(admin.to_owned())
+        .call(owner)
+        .unwrap();
+
+    let admins = contract.whitelist_proxy().admins().unwrap().admins;
+    assert!(admins.is_empty());
+}
+
+#[test]
+fn manage_admins() {
+    let app = App::default();
+    let code_id = CodeId::store_code(&app);
+
+    let owner = "owner";
+    let admin = "admin";
+
+    let contract = code_id.instantiate(1,vec![]).call(owner).unwrap();
+
+    // Admins list is empty
+    let admins = contract.whitelist_proxy().admins().unwrap().admins;
+    assert!(admins.is_empty());
+
+    // Admin can be added
+    contract
+        .whitelist_proxy()
+        .add_admin(admin.to_owned())
+        .call(owner)
+        .unwrap();
+
+    let admins = contract.whitelist_proxy().admins().unwrap().admins;
+    assert_eq!(admins, &[Addr::unchecked(admin)]);
 
     // Admin can be removed
     contract
